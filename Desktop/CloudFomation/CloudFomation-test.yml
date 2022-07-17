@@ -567,6 +567,52 @@ Resources:
         - Key: Name
           Value: BastionSeverSG
 
+# 起動テンプレート作成
+  Ec2InstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      # 起動テンプレートの名前
+      LaunchTemplateName: BastionlaunchTemplate
+      # 起動テンプレートの情報
+      LaunchTemplateData:
+        # リソースの作成時にリソースに適用するタグを指定
+        TagSpecifications:
+        # ------------------------------------------------------
+        # タグ付けするリソースのタイプ。
+        # 現在、作成中のタグ付けをサポートするリソースタイプは、instance および volume 
+        # ------------------------------------------------------
+        - ResourceType: instance
+          Tags:
+          - Key: Name
+            Value: BastionlaunchTemplate
+        UserData:
+          Fn::Base64: |
+            #cloud-config
+                      password: Kazuya0412
+                      chpasswd: { expire: False }
+                      ssh_pwauth: True
+        KeyName: !Ref KeyName
+        ImageId: !FindInMap 
+          - AWSRegionArch2AMI
+          - !Ref 'AWS::Region'
+          - !FindInMap 
+            - AWSInstanceType2Arch
+            - !Ref InstanceType
+            - Arch
+        InstanceType: !Ref InstanceType
+        NetworkInterfaces: 
+        # IPv4 アドレスを割り当てるか
+        - AssociatePublicIpAddress: "true"
+          # ------------------------------------------------------
+          # アタッチの順序におけるネットワークインターフェイスの位置。
+          # ネットワークインターフェイスを指定する場合必須
+          # ------------------------------------------------------
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnet1a
+          Groups:
+           - !Ref BastionServerSecurityGroup
+
+
 # 踏み台サーバー作成
   BastionSever:
     Type: AWS::EC2::Instance
